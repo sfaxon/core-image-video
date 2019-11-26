@@ -14,27 +14,30 @@ class SimpleFilterViewController: UIViewController {
     var coreImageView: CoreImageView?
 
     var angleForCurrentTime: Float {
-        return Float(NSDate.timeIntervalSinceReferenceDate() % M_PI*2)
+        return Float(Date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: Double.pi * 2))
     }
 
     override func loadView() {
-        coreImageView = CoreImageView(frame: CGRect())
+        coreImageView = CoreImageView(frame: CGRect.zero)
         self.view = coreImageView
     }
     
-    override func viewDidAppear(animated: Bool) {
+    override func viewDidAppear(_ animated: Bool) {
         setupCameraSource()
     }
     
-    override func viewDidDisappear(animated: Bool) {
+    override func viewDidDisappear(_ animated: Bool) {
         source?.running = false
     }
     
     func setupCameraSource() {
-        source = CaptureBufferSource(position: AVCaptureDevicePosition.Front) { [unowned self] (buffer, transform) in
-            let input = CIImage(buffer: buffer).imageByApplyingTransform(transform)
-            let filter = hueAdjust(self.angleForCurrentTime)
-            self.coreImageView?.image = filter(input)
+        source = CaptureBufferSource(position: AVCaptureDevice.Position.front) { [weak self] (buffer, transform) in
+            guard let strongSelf = self else {
+                return
+            }
+            let input = CIImage(buffer: buffer).transformed(by: transform)
+            let filter = hueAdjust(angleInRadians: strongSelf.angleForCurrentTime)
+            strongSelf.coreImageView?.image = filter(input)
         }
         source?.running = true
     }
